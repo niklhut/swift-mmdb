@@ -22,7 +22,7 @@ public class GeoLite2CountryDatabase : MMDB {
         super.init(data: data)
         
         // check that we really the right database type
-        if databaseType != "GeoLite2-Country" { return nil }
+//        if databaseType != "GeoLite2-Country" { return nil }
     }
 
     /// Do the search from ascii numeric internet address but just fetch out the ISO country code.
