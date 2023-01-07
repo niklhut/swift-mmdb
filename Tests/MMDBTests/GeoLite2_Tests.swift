@@ -34,13 +34,13 @@ class GeoLite2_Tests: XCTestCase {
         
         XCTAssertEqual(db.metadata.databaseType, "GeoLite2-Country")
         
-        guard case let .value(core) = try db.search(address: "2.125.160.216") else {
+        guard case let .value(core) = db.search(address: "2.125.160.216") else {
             XCTFail("Failed to search some EU address")
             return
         }
         core.dump()
 
-        guard case let .value(somewhere) = try db.search(address: "2001:270::0") else {
+        guard case let .value(somewhere) = db.search(address: "2001:270::0") else {
             XCTFail("Failed to search a KR ipv6 address")
             return
         }
@@ -77,7 +77,7 @@ class GeoLite2_Tests: XCTestCase {
 
         self.measure {
             for addr in hosts {
-                guard case .value(_) = try? db.search(address: addr) else {
+                guard case .value(_) = db.search(address: addr) else {
                     XCTFail("Failed to search \(addr)")
                     return
                 }
@@ -110,7 +110,7 @@ class GeoLite2_Tests: XCTestCase {
                       "2a02:d080::10"]
         self.measure {
             for addr in hosts {
-                guard case .value(_) = try? db.search(address: addr) else {
+                guard case .value(_) = db.search(address: addr) else {
                     XCTFail("Failed to search \(addr)")
                     return
                 }

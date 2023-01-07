@@ -16,30 +16,30 @@ struct Metadata {
     init(_ metadata: [String: Decoder.Value]) throws {
         guard case let .uint16(major) = metadata["binary_format_major_version"],
               case let .uint16(minor) = metadata["binary_format_minor_version"] else {
-            throw MMDBError(message: "Could not find database version")
+            throw MMDBError.metadataError("Could not find database version")
         }
         
         if major < 2 {
-            throw MMDBError(message: "Database is not of major version 2")
+            throw MMDBError.metadataError("Database is not of major version 2")
         }
         
         self.majorVersion = UInt(major)
         self.minorVersion = UInt(minor)
         
         guard case let .uint64(epoch) = metadata["build_epoch"] else {
-            throw MMDBError(message: "Could not decode build epoch")
+            throw MMDBError.metadataError("Could not decode build epoch")
         }
         guard case let .uint16(ipVersion) = metadata["ip_version"] else {
-            throw MMDBError(message: "Could not decode ip version")
+            throw MMDBError.metadataError("Could not decode ip version")
         }
         guard case let .uint16(recordSize) = metadata["record_size"] else {
-            throw MMDBError(message: "Could not decode record size")
+            throw MMDBError.metadataError("Could not decode record size")
         }
         guard case let .uint32(nodeCount) = metadata["node_count"] else {
-            throw MMDBError(message: "Could not decode node count")
+            throw MMDBError.metadataError("Could not decode node count")
         }
         guard case let .string(databaseType) = metadata["database_type"] else {
-            throw MMDBError(message: "Could not decode database type")
+            throw MMDBError.metadataError("Could not decode database type")
         }
         
         self.epoch = UInt(epoch)
@@ -52,12 +52,12 @@ struct Metadata {
         guard case let .array(languages) = metadata["languages"],
               case let .map(description) = metadata["description"]
         else {
-            throw MMDBError(message: "Could not decode languages or description")
+            throw MMDBError.metadataError("Could not decode languages or description")
         }
         self.languages = languages
         self.description = description
         
-        self.searchTreeSize = (( self.recordSize * 2) / 8) * self.nodeCount
+        self.searchTreeSize = ((self.recordSize * 2) / 8) * self.nodeCount
         
         self.dataSectionStart = searchTreeSize + 16
     }

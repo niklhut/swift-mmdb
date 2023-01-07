@@ -1,8 +1,11 @@
 import Foundation
 
+/// Used for decoding data from a file stream.
 public struct Decoder {
+    /// The file stream consisting of the MMDB database file.
     var fileStream: FileStream
     
+    /// The data field type tag read from the MMDB file as given in *MaxMind DB File Format Specification 2.0*
     enum FieldType: UInt8 {
         case extended = 0
         case pointer = 1
@@ -22,6 +25,8 @@ public struct Decoder {
         case float = 15
     }
     
+    /// A *value* read from an MMDB file. This parallels the `FieldType` tags, but includes an associated value
+    /// and you can't mix rawValues and associated values
     public indirect enum Value {
         case string(String)
         case map([String:Value])
@@ -83,11 +88,14 @@ public struct Decoder {
     }
     
     func decode(_ offset: inout Int, startingAt pointerBase: Int) throws -> Value {
+        guard fileStream.indices.contains(offset) else {
+            throw MMDBError.indexOutOfRange
+        }
         let controlByte = fileStream[offset]
         offset += 1
         let fieldTypeValue = controlByte >> 5
         guard var type = FieldType(rawValue: fieldTypeValue) else {
-            throw MMDBError(message: "Unknown field type: \(fieldTypeValue)")
+            throw MMDBError.unknownFieldType(fieldTypeValue)
         }
         
         if type == .pointer {
@@ -99,11 +107,11 @@ public struct Decoder {
             let extendedFieldTypeValue = fileStream[offset] + 7
             
             guard extendedFieldTypeValue >= 8 else {
-                throw MMDBError(message: "Invalid Extended Type at offset: \(offset)")
+                throw MMDBError.invalidFieldType(extendedFieldTypeValue)
             }
             
             guard let newType = FieldType(rawValue: extendedFieldTypeValue) else {
-                throw MMDBError(message: "Unknown field type: \(extendedFieldTypeValue)")
+                throw MMDBError.unknownFieldType(extendedFieldTypeValue)
             }
             type = newType
             offset += 1
@@ -166,7 +174,7 @@ public struct Decoder {
         case .float:
             return .float(try Self.decodeFloat(from: bytes))
         default:
-            throw MMDBError(message: "Unknown or unexpected type: \(type) at offset: \(offset - size)")
+            throw MMDBError.unknownFieldType(type.rawValue)
         }
     }
     
@@ -183,19 +191,21 @@ public struct Decoder {
             let pointerSizeBits = controlByte & 0x7
             packed = [pointerSizeBits] + buffer
         }
-        return Int(Self.decodeUInt32(from: packed)) + pointerBase + pointerOffsets[pointerSize]
+        
+        let value = Int(Self.decodeUInt32(from: packed)) + pointerBase + pointerOffsets[pointerSize]
+        return value
     }
     
     static func decodeString(from bytes: ArraySlice<UInt8>) throws -> String {
         guard let string = String(bytes: bytes, encoding: .utf8) else {
-            throw MMDBError(message: "Could not decode string from bytes: \(bytes)")
+            throw MMDBError.decodingError("Could not decode string from bytes: \(bytes)")
         }
         return string
     }
     
     static func decodeDouble(from bytes: ArraySlice<UInt8>) throws -> Double {
         guard bytes.count == 8 else {
-            throw MMDBError(message: "Could not deocde double from bytes: \(bytes)")
+            throw MMDBError.decodingError("Could not deocde double from bytes: \(bytes)")
         }
         return Double(bitPattern: decodeUInt64(from: bytes))
     }
@@ -212,7 +222,7 @@ public struct Decoder {
         var map = [String: Value]()
         for _ in 0..<size {
             guard case let .string(key) = try decode(&offset, startingAt: pointerBase) else {
-                throw MMDBError(message: "Map key is no String at offset: \(offset)")
+                throw MMDBError.decodingError("Map key is no String at offset: \(offset)")
             }
             let value = try decode(&offset, startingAt: pointerBase)
             map[key] = value
@@ -253,7 +263,7 @@ public struct Decoder {
     
     static func decodeFloat(from bytes: ArraySlice<UInt8>) throws -> Float {
         guard bytes.count == 4 else {
-            throw MMDBError(message: "Could not deocde float from bytes: \(bytes)")
+            throw MMDBError.decodingError("Could not deocde float from bytes: \(bytes)")
         }
         return Float(bitPattern: decodeUInt32(from: bytes))
     }

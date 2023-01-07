@@ -20,12 +20,14 @@ class FileStream {
     
     func read(from offset: Int, numberOfBytes: Int) throws -> ArraySlice<UInt8> {
         guard offset + numberOfBytes <= bytes.count else {
-            throw MMDBError(message: "Could not read \(numberOfBytes) at offset \(offset).")
+            throw MMDBError.indexOutOfRange
         }
         return bytes[offset..<offset + numberOfBytes]
     }
     
     var count: Int { bytes.count }
+    
+    var indices: Range<Array<UInt8>.Index> { bytes.indices }
     
     func findMetadataStart() throws -> Int {
         // This is "\xab\xcd\xefMaxMind.com" per the spec, but that is invalid UTF8, so we are kind of screwed there.
@@ -39,6 +41,6 @@ class FileStream {
             }
         }
         
-        throw MMDBError(message: "Could not find metadata")
+        throw MMDBError.metadataError("Could not find metadata")
     }
 }

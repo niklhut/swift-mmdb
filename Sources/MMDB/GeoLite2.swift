@@ -22,7 +22,7 @@ public class GeoLite2CountryDatabase : MMDB {
         try super.init(data: data)
         
         // check that we really the right database type
-        if metadata.databaseType != "GeoLite2-Country" { throw MMDBError(message: "Database is not of type GeoLite2-Country") }
+        if metadata.databaseType != "GeoLite2-Country" { throw MMDBError.invalidDatabaseType(metadata.databaseType) }
     }
 
     /// Do the search from ascii numeric internet address but just fetch out the ISO country code.
@@ -30,7 +30,7 @@ public class GeoLite2CountryDatabase : MMDB {
     /// or `inet_pton`
     /// - Returns: A two letter ISO country code, capitalized, or nil if not found (or error)
     public func countryCode(address: String) throws -> String? {
-        switch try search(address: address) {
+        switch search(address: address) {
         case .notFound:
             return nil
         case .partial(_):
